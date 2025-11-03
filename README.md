@@ -1,5 +1,7 @@
 # webview-ultra
 
+Webview UltraはViboxに名称を変更します。
+
 Please use at your own risk.
 ご利用は自己責任で。
 Please try not to spread it.
