@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="favicon.ico">
+    <title>Webview Ultra</title>
+    <style>
+        /* 既存のCSSは変更なし */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            width: 90%;
+            max-width: 400px;
+            overflow: hidden;
+        }
+        
+        .login-section {
+            padding: 50px 30px;
+        }
+        
+        .app-section {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            flex-direction: column;
+            background: white;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 30px;
+        }
+        
+        .input-group {
+            margin-bottom: 25px;
+        }
+        
+        input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e1e1e1;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        button {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        .error {
+            color: #e74c3c;
+            text-align: center;
+            margin-top: 15px;
+            font-size: 14px;
+            display: none;
+        }
+        
+        .webview-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 5px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: white;
+        }
+        
+
+        .webview-header h {
+            font-size: 13px;
+        }
+
+        .webview-header h2 {
+            font-size: 20px;
+            font-weight: 400px;
+        }
+
+        .logout-btn {
+            background: rgba(255,255,255,0.2);
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            width: auto;
+        }
+        
+        iframe {
+            flex: 1;
+            border: none;
+            width: 100%;
+            height: 100%;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+        
+        .error-section {
+            display: none;
+            padding: 40px 20px;
+            text-align: center;
+            background: white;
+        }
+        
+        .retry-btn {
+            margin-top: 20px;
+            background: #667eea;
+        }
+
+        .bottom {
+            text-align: center;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        
+        .expired-message {
+            text-align: center;
+            color: #e74c3c;
+            margin-top: 15px;
+            font-size: 16px;
+            font-weight: bold;
+            display: none;
+        }
+        
+        /* 広告画面用のスタイル */
+        .ad-section {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            z-index: 1000;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .ad-image-container {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+        
+        .ad-image {
+            max-width: 100%;
+            max-height: 100%;
+            width: auto;
+            height: auto;
+            object-fit: contain;
+        }
+        
+        .ad-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .countdown {
+            font-size: 24px;
+            font-weight: bold;
+            color: #fff;
+            margin: 10px 0;
+        }
+        
+        .skip-btn {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        
+        .ad-info {
+            font-size: 14px;
+            color: #ccc;
+            margin-top: 10px;
+        }
+
+        .big {
+            font-size: 50px;
+        }
+    </style>
+</head>
+<body>
+    <!-- ログイン画面 -->
+    <div class="container">
+        <div class="login-section" id="loginSection">
+            <h1>Webview Ultra</h1>
+            <div class="input-group">
+                <input type="password" id="password" placeholder="Enter password" onkeypress="handleKeyPress(event)">
+            </div>
+            <button onclick="checkPassword()">LOGIN</button>
+            <div class="error" id="errorMessage">The password is incorrect</div>
+            <div class="expired-message" id="expiredMessage">Please apply the update</div>
+        </div>
+        <p class="bottom">Powered by Toston</p>
+    </div>
+    
+    <!-- 広告画面 -->
+    <div class="ad-section" id="adSection">
+        <div class="ad-image-container">
+            <!-- 大きな広告画像 -->
+            <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2069&q=80" 
+                 alt="Advertisement" class="ad-image" id="adImage">
+            
+            <div class="ad-overlay">
+                <div class="big">伊部でドリンク飲むならToston！最新情報をinstagramにて配信中！@toston_drink</div>
+                <div class="countdown" id="countdown">10</div>
+                <div class="ad-info">Webview Ultraをご利用ありがとうございます。この広告は10秒で終了します</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- メインアプリ画面 -->
+    <div class="app-section" id="appSection">
+        <div class="webview-header">
+            <h2>Webview Ultra<h> Powered by Toston</h></h2>
+            <button class="logout-btn" onclick="logout()">LOGOUT</button>
+        </div>
+        <div class="loading" id="loadingMessage">Loading...</div>
+        <iframe id="webview" src="" onload="hideLoading()" onerror="showError()"></iframe>
+        <div class="error-section" id="errorSection">
+            <h3>Connection error</h3>
+            <p>Unable to connect to the site</p>
+            <p>Please check your internet connection</p>
+            <button class="retry-btn" onclick="retryLoad()">Retry</button>
+        </div>
+    </div>
+
+    <script>
+        const CORRECT_PASSWORD = "toston";
+        const TARGET_URL = "https://repiped.wireway.ch/";
+        const AD_DURATION = 10; // 広告表示時間（秒）
+        
+        // 広告画像のURL（実際の広告画像に置き換えてください）
+        const AD_IMAGE_URL = "https://scontent-itm1-1.cdninstagram.com/v/t51.82787-15/564681360_17850021924574745_4156821976148691975_n.heic?stp=dst-jpg_e35_tt6&_nc_cat=109&ig_cache_key=Mzc0NTM3NzY0MjU0NDIyOTA3OQ%3D%3D.3-ccb1-7&ccb=1-7&_nc_sid=58cdad&efg=eyJ2ZW5jb2RlX3RhZyI6InhwaWRzLjE0NDB4MTkyMC5zZHIuQzMifQ%3D%3D&_nc_ohc=ksWpNRiMD7AQ7kNvwEmNo-o&_nc_oc=Adl6MFQesBaD0V6WPwJjsAEgsfD2SB0cMpmb2ap4Zlj6YEfy0rqsYiCMIZO4DWSvuiX3g7C2fXGHE5JakeLjRM_7&_nc_ad=z-m&_nc_cid=0&_nc_zt=23&_nc_ht=scontent-itm1-1.cdninstagram.com&_nc_gid=aCRPxF2FJeM2nbcCVsmSHg&oh=00_AfjldKCb9Lxby1j9x9oDbSkhDih4O_mmjHUI9I1EkuVR1Q&oe=690DDFCE";
+        
+        // 広告関連の変数
+        let adTimer;
+        let remainingTime = AD_DURATION;
+        
+        // 有効期限チェック関数
+        function isExpired() {
+            const currentDate = new Date();
+            const currentYear = currentDate.getFullYear();
+            const currentMonth = currentDate.getMonth() + 1; // 月は0から始まるので+1
+            
+            // 2026年1月以降は使用不可
+            if (currentYear > 2025) return true;
+            if (currentYear === 2025 && currentMonth >= 12) return true;
+            
+            return false;
+        }
+        
+        // 全画面表示を要求する関数
+        function requestFullscreen() {
+            const element = document.documentElement;
+            
+            if (element.requestFullscreen) {
+                element.requestFullscreen();
+            } else if (element.webkitRequestFullscreen) { /* Safari */
+                element.webkitRequestFullscreen();
+            } else if (element.msRequestFullscreen) { /* IE11 */
+                element.msRequestFullscreen();
+            }
+        }
+        
+        // ユーザーエージェント設定
+        function setUserAgent() {
+            const iframe = document.getElementById('webview');
+            const userAgents = [
+                'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+            ];
+            
+            const randomAgent = userAgents[Math.floor(Math.random() * userAgents.length)];
+            iframe.setAttribute('sandbox', 'allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox');
+        }
+        
+        // 人間らしい遅延
+        function humanizedLoad() {
+            const iframe = document.getElementById('webview');
+            const delay = 1000 + Math.random() * 2000;
+            
+            setTimeout(() => {
+                const timestamp = new Date().getTime();
+                iframe.src = TARGET_URL + '?t=' + timestamp;
+            }, delay);
+        }
+        
+        // マウス動作の模倣
+        function simulateHumanBehavior() {
+            let moves = 0;
+            const maxMoves = 3 + Math.floor(Math.random() * 5);
+            
+            const moveInterval = setInterval(() => {
+                if (moves >= maxMoves) {
+                    clearInterval(moveInterval);
+                    return;
+                }
+                
+                const x = 100 + Math.random() * (window.innerWidth - 200);
+                const y = 100 + Math.random() * (window.innerHeight - 200);
+                
+                document.dispatchEvent(new MouseEvent('mousemove', {
+                    clientX: x,
+                    clientY: y,
+                    bubbles: true
+                }));
+                
+                moves++;
+            }, 200 + Math.random() * 400);
+        }
+        
+        // 広告表示関数
+        function showAd() {
+            // 広告画像を設定
+            document.getElementById('adImage').src = AD_IMAGE_URL;
+            
+            document.getElementById('adSection').style.display = 'flex';
+            remainingTime = AD_DURATION;
+            document.getElementById('countdown').textContent = remainingTime;
+            
+            adTimer = setInterval(() => {
+                remainingTime--;
+                document.getElementById('countdown').textContent = remainingTime;
+                
+                if (remainingTime <= 0) {
+                    clearInterval(adTimer);
+                    hideAd();
+                }
+            }, 1000);
+        }
+        
+        // 広告非表示関数
+        function hideAd() {
+            clearInterval(adTimer);
+            document.getElementById('adSection').style.display = 'none';
+            showMainApp();
+        }
+        
+        // 広告スキップ関数
+        function skipAd() {
+            hideAd();
+        }
+        
+        // メインアプリ表示関数
+        function showMainApp() {
+            document.getElementById('appSection').style.display = 'flex';
+            document.getElementById('loadingMessage').style.display = 'block';
+            document.getElementById('errorSection').style.display = 'none';
+            document.getElementById('webview').style.display = 'none';
+            
+            // アプリ画面表示時に全画面モードを要求
+            requestFullscreen();
+            
+            setUserAgent();
+            humanizedLoad();
+        }
+        
+        function checkPassword() {
+            // 有効期限チェック
+            if (isExpired()) {
+                document.getElementById('expiredMessage').style.display = 'block';
+                document.getElementById('errorMessage').style.display = 'none';
+                document.getElementById('password').value = '';
+                document.getElementById('password').disabled = true;
+                document.querySelector('button').disabled = true;
+                return;
+            }
+            
+            const password = document.getElementById('password').value;
+            const errorMessage = document.getElementById('errorMessage');
+            
+            if (password === CORRECT_PASSWORD) {
+                simulateHumanBehavior();
+                document.getElementById('loginSection').style.display = 'none';
+                document.getElementById('errorMessage').style.display = 'none';
+                setTimeout(showAd, 800);
+            } else {
+                errorMessage.style.display = 'block';
+                document.getElementById('password').value = '';
+                document.getElementById('password').focus();
+            }
+        }
+        
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                checkPassword();
+            }
+        }
+        
+        function hideLoading() {
+            document.getElementById('loadingMessage').style.display = 'none';
+            document.getElementById('webview').style.display = 'block';
+            document.getElementById('errorSection').style.display = 'none';
+        }
+        
+        function showError() {
+            document.getElementById('loadingMessage').style.display = 'none';
+            document.getElementById('webview').style.display = 'none';
+            document.getElementById('errorSection').style.display = 'block';
+        }
+        
+        function retryLoad() {
+            showMainApp();
+        }
+        
+        function logout() {
+            // 広告タイマーをクリア
+            if (adTimer) {
+                clearInterval(adTimer);
+            }
+            
+            // 全画面モードを終了
+            if (document.exitFullscreen) {
+                document.exitFullscreen();
+            } else if (document.webkitExitFullscreen) { /* Safari */
+                document.webkitExitFullscreen();
+            } else if (document.msExitFullscreen) { /* IE11 */
+                document.msExitFullscreen();
+            }
+            
+            document.getElementById('appSection').style.display = 'none';
+            document.getElementById('adSection').style.display = 'none';
+            document.getElementById('loginSection').style.display = 'block';
+            document.getElementById('password').value = '';
+            document.getElementById('errorMessage').style.display = 'none';
+            document.getElementById('webview').src = '';
+            document.getElementById('password').focus();
+        }
+        
+        // 初期設定
+        function init() {
+            document.getElementById('password').focus();
+            
+            // ページ読み込み時に有効期限チェック
+            if (isExpired()) {
+                document.getElementById('expiredMessage').style.display = 'block';
+                document.getElementById('password').disabled = true;
+                document.querySelector('button').disabled = true;
+            }
+            
+            // ユーザーインタラクション後に全画面モードを要求するための準備
+            document.addEventListener('click', function initialFullscreen() {
+                requestFullscreen();
+                document.removeEventListener('click', initialFullscreen);
+            });
+            
+            if (document.getElementById('appSection').style.display === 'flex') {
+                logout();
+            }
+        }
+        
+        // ページ読み込み時に初期化
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>
+
+
+
+
