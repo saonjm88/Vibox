@@ -71,6 +71,20 @@
     </iframe>
 
     <script>
+        // ページ読み込み時に一度だけ再読み込みする
+        window.addEventListener('load', function() {
+            const frame = document.getElementById('viboxFrame');
+            const currentSrc = frame.src;
+            
+            // 少し遅延させてから再読み込み（初期読み込みを確実に行うため）
+            setTimeout(function() {
+                frame.src = 'about:blank';
+                setTimeout(function() {
+                    frame.src = currentSrc;
+                }, 100);
+            }, 500);
+        });
+
         // 読み込み完了時の処理
         document.getElementById('viboxFrame').addEventListener('load', function() {
             document.getElementById('loading').style.display = 'none';
