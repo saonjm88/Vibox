@@ -1,4 +1,4 @@
-# webview-ultra
+# Vibox
 
 Webview UltraはViboxにリニューアルされます。
 以前配信したWebview Ultraは１２月で利用できなくなります。
